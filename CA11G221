@@ -1,0 +1,374 @@
+       IDENTIFICATION DIVISION.                                         00010000
+       PROGRAM-ID. CA11G221.                                            00020032
+       ENVIRONMENT DIVISION.                                            00030000
+       INPUT-OUTPUT SECTION.                                            00040000
+       FILE-CONTROL.                                                    00050000
+      * **ASSIGINING INPUT AND OUTPUT FILES TO DD NAMES USING SELECT**  00051029
+           SELECT TI001-PS ASSIGN   TO INPMEDPS                         00060030
+                  ORGANIZATION      IS SEQUENTIAL                       00070030
+                  ACCESS            IS SEQUENTIAL                       00080030
+                  FILE STATUS       IS WS-FST-TI001.                    00090030
+           SELECT TO001-KSDS ASSIGN TO OUTMEDPS                         00100016
+                  ORGANIZATION      IS INDEXED                          00110030
+                  ACCESS            IS RANDOM                           00120030
+                  RECORD KEY        IS TO001-MEDICINE-CODE              00130030
+                  FILE STATUS       IS WS-FST-TO001.                    00140030
+           SELECT TO002-SCH2 ASSIGN TO OUTMEDS2                         00150028
+                  ORGANIZATION      IS SEQUENTIAL                       00160030
+                  ACCESS            IS SEQUENTIAL                       00170030
+                  FILE STATUS       IS WS-FST-TO002.                    00180030
+           SELECT TO003-ERR ASSIGN  TO OUTMEDER                         00190030
+                  ORGANIZATION      IS SEQUENTIAL                       00200030
+                  ACCESS            IS SEQUENTIAL                       00210030
+                  FILE STATUS       IS WS-FST-TO003.                    00220030
+       DATA DIVISION.                                                   00230001
+       FILE SECTION.                                                    00240001
+      * **CREATING LAYOUT FOR INPUT PS FILE**                           00241029
+       FD TI001-PS.                                                     00250001
+       01 TI001-PS-REC.                                                 00260017
+          05 TI001-MEDICINE-CODE       PIC X(03).                       00270001
+          05 FILLER                    PIC X(01).                       00280001
+          05 TI001-DOSAGE              PIC A(01).                       00290001
+          05 FILLER                    PIC X(01).                       00300001
+          05 TI001-QUANTITY            PIC 9(03).                       00310001
+          05 FILLER                    PIC X(01).                       00320001
+          05 TI001-EXPIRY-STATUS       PIC X(07).                       00330001
+          05 FILLER                    PIC X(01).                       00340001
+          05 TI001-RATE-PNO            PIC 9(02).9(02).                 00350001
+          05 FILLER                    PIC X(57).                       00360001
+      * **CREATING LAYOUT FOR KSDS OUTPUT FILE**                        00361029
+       FD TO001-KSDS.                                                   00370014
+       01 TO001-KSDS-REC.                                               00380014
+          05 TO001-MEDICINE-CODE       PIC X(03).                       00390001
+          05 FILLER                    PIC X(01).                       00400001
+          05 TO001-QUANTITY            PIC 9(03).                       00410001
+          05 FILLER                    PIC X(01).                       00420001
+          05 TO001-EXPIRY-STATUS       PIC X(07).                       00430001
+          05 FILLER                    PIC X(01).                       00440001
+          05 TO001-ORDER-STATUS        PIC X(07).                       00450018
+          05 FILLER                    PIC X(01).                       00460001
+          05 TO001-CLASS               PIC X(04).                       00470001
+          05 FILLER                    PIC X(01).                       00480001
+          05 TO001-RATE-PNO            PIC 9(02).9(02).                 00490001
+          05 FILLER                    PIC X(01).                       00500001
+          05 TO001-DISC-RATE-PNO       PIC 9(02).9(02).                 00510001
+          05 FILLER                    PIC X(01).                       00520002
+          05 TO001-TOT-PRICE           PIC 9(05).9(02).                 00530002
+          05 FILLER                    PIC X(31).                       00540002
+      * **CREATING LAYOUT FOR SCH2 OUTPUT FILE**                        00541029
+       FD TO002-SCH2.                                                   00550028
+       01 TO002-SCH2-REC.                                               00560028
+          05 TO002-MEDICINE-CODE       PIC X(03).                       00570002
+          05 FILLER                    PIC X(01).                       00580002
+          05 TO002-QUANTITY            PIC 9(03).                       00590002
+          05 FILLER                    PIC X(01).                       00600002
+          05 TO002-EXPIRY-STATUS       PIC X(07).                       00610002
+          05 FILLER                    PIC X(01).                       00620002
+          05 TO002-ORDER-STATUS        PIC X(07).                       00630017
+          05 FILLER                    PIC X(01).                       00640002
+          05 TO002-CLASS               PIC X(04).                       00650002
+          05 FILLER                    PIC X(01).                       00660002
+          05 TO002-RATE-PNO            PIC 9(02).9(02).                 00670002
+          05 FILLER                    PIC X(01).                       00680002
+          05 TO002-DISC-RATE-PNO       PIC 9(02).9(02).                 00690002
+          05 FILLER                    PIC X(01).                       00700002
+          05 TO002-TOT-PRICE           PIC 9(05).9(02).                 00710002
+          05 FILLER                    PIC X(31).                       00720002
+      * **CREATING LAYOUT FOR ERROR OUTPUT FILE**                       00721029
+       FD TO003-ERR.                                                    00730028
+       01 TO003-ERR-REC.                                                00740028
+          05 TO003-MEDICINE-CODE       PIC X(03).                       00741031
+          05 FILLER                    PIC X(01).                       00742030
+          05 TO003-DOSAGE              PIC A(01).                       00743031
+          05 FILLER                    PIC X(01).                       00744030
+          05 TO003-QUANTITY            PIC 9(03).                       00745031
+          05 FILLER                    PIC X(01).                       00746030
+          05 TO003-EXPIRY-STATUS       PIC X(07).                       00747031
+          05 FILLER                    PIC X(01).                       00748030
+          05 TO003-RATE-PNO            PIC 9(02).9(02).                 00749031
+          05 FILLER                    PIC X(57).                       00749130
+       WORKING-STORAGE SECTION.                                         00910002
+      * **DECLARING VARIABLES WITH VIRTUAL DECIMAL POINT**              00911029
+       01 WS-VARS.                                                      00920002
+          05 WS-RATE-PNO               PIC 9(02)V9(02).                 00930009
+          05 WS-DISC-RATE-PNO          PIC 9(02)V9(02).                 00940022
+          05 WS-TOT-PRICE              PIC 9(05)V9(02).                 00950009
+          05 WS-COUNTER                PIC 9(03) VALUE 000.             00960003
+      * **DECLARING FILE STATUS VARIABLES**                             00961030
+          05 WS-FST-TI001              PIC 9(02) VALUE 00.              00970003
+             88 C05-TI001-SUC          VALUE 00.                        00980010
+             88 C05-TI001-EOF          VALUE 10.                        00990010
+          05 WS-FST-TO001              PIC 9(02) VALUE 00.              01000003
+             88 C05-TO001-SUC          VALUE 00.                        01010010
+          05 WS-FST-TO002              PIC 9(02) VALUE 00.              01020003
+             88 C05-TO002-SUC          VALUE 00.                        01030010
+          05 WS-FST-TO003              PIC 9(02) VALUE 00.              01040003
+             88 C05-TO003-SUC          VALUE 00.                        01050003
+      * **DEFINING ARRAY & LAYOUT FOR ARRAY                             01051029
+      *   WS-I REPRESENT INDEX OF ARRAY WS-REC**                        01052029
+          05 WS-I                      PIC 9(02) VALUE 0.               01060012
+          05 WS-REC OCCURS 100 TIMES.                                   01070012
+             10 MEDICINE-CODE          PIC X(03).                       01080012
+             10 QUANTITY               PIC 9(03).                       01090012
+             10 EXPIRY-STATUS          PIC X(07).                       01100012
+             10 ORDER-STATUS           PIC X(07).                       01110012
+             10 WS-CLASS               PIC X(04).                       01120012
+             10 RATE-PNO               PIC 9(02).9(02).                 01130012
+             10 DISC-RATE-PNO          PIC 9(02).9(02).                 01140019
+             10 TOT-PRICE              PIC 9(05).9(02).                 01150012
+       PROCEDURE DIVISION.                                              01160003
+      * **MAIN PARA CONTAINS THE MAIN FLOW OF PROGRAM**                 01161029
+       0000-MAIN-PARA.                                                  01170003
+           PERFORM 1000-INIT-PARA                                       01180003
+              THRU 1000-INIT-PARA-EXIT.                                 01190003
+           PERFORM 3000-PROC-PARA                                       01200003
+              THRU 3000-PROC-PARA-EXIT.                                 01210003
+           PERFORM 9000-TERM-PARA                                       01220003
+              THRU 9000-TERM-PARA-EXIT.                                 01230003
+       0000-MAIN-PARA-EXIT.                                             01240003
+           EXIT                                                         01250003
+           .                                                            01260003
+       1000-INIT-PARA.                                                  01270003
+           CONTINUE                                                     01280003
+           .                                                            01290003
+       1000-INIT-PARA-EXIT.                                             01300003
+           EXIT                                                         01310003
+           .                                                            01320003
+       9000-TERM-PARA.                                                  01330003
+           STOP RUN                                                     01340003
+           .                                                            01350003
+       9000-TERM-PARA-EXIT.                                             01360003
+           EXIT                                                         01370003
+           .                                                            01380003
+       3000-PROC-PARA.                                                  01390003
+           PERFORM 3100-OPEN-PARA                                       01400003
+              THRU 3100-OPEN-PARA-EXIT                                  01410003
+           PERFORM 3200-READ-PARA                                       01420003
+              THRU 3200-READ-PARA-EXIT                                  01430003
+              UNTIL C05-TI001-EOF                                       01440017
+           PERFORM 3300-CLOSE-PARA                                      01450003
+              THRU 3300-CLOSE-PARA-EXIT                                 01460003
+           .                                                            01470003
+       3000-PROC-PARA-EXIT.                                             01480003
+           EXIT                                                         01490003
+           .                                                            01500003
+       3100-OPEN-PARA.                                                  01510003
+      * **OPENING INPUT PS FILE**                                       01511029
+           OPEN INPUT TI001-PS                                          01520003
+           EVALUATE TRUE                                                01530017
+           WHEN C05-TI001-SUC                                           01540003
+               DISPLAY 'TI001 OPENED'                                   01550030
+           WHEN OTHER                                                   01560003
+               DISPLAY 'TI001 OPEN FAILED' WS-FST-TI001                 01570030
+           END-EVALUATE                                                 01580003
+      * **OPENING OUTPUT KSDS FILE IN OUTPUT MODE**                     01580129
+           OPEN OUTPUT TO001-KSDS                                       01590014
+           EVALUATE TRUE                                                01600017
+           WHEN C05-TO001-SUC                                           01610003
+               DISPLAY 'TO001 OPENED'                                   01620030
+           WHEN OTHER                                                   01630003
+               DISPLAY 'TO001 OPEN FAILED' WS-FST-TO001                 01640030
+           END-EVALUATE                                                 01650003
+      * **OPENING OUTPUT SCH2 FILE IN OUTPUT MODE**                     01651029
+           OPEN OUTPUT TO002-SCH2                                       01660029
+           EVALUATE TRUE                                                01670017
+           WHEN C05-TO002-SUC                                           01680003
+               DISPLAY 'TO002 OPENED'                                   01690030
+           WHEN OTHER                                                   01700003
+               DISPLAY 'TO002 OPEN FAILED' WS-FST-TO002                 01710030
+           END-EVALUATE                                                 01720003
+      * **OPENING OUTPUT ERROR FILE IN OUTPUT MODE**                    01721029
+           OPEN OUTPUT TO003-ERR                                        01730029
+           EVALUATE TRUE                                                01740017
+           WHEN C05-TO003-SUC                                           01750003
+               DISPLAY 'TO003 OPENED'                                   01760030
+           WHEN OTHER                                                   01770003
+               DISPLAY 'TO003 OPEN FAILED' WS-FST-TO003                 01780030
+           END-EVALUATE                                                 01790003
+           .                                                            01800003
+       3100-OPEN-PARA-EXIT.                                             01810003
+           EXIT                                                         01820003
+           .                                                            01830003
+      * **CLOSE PARA CLOSES ALL THE INPUT AND OUTPUT FILES**            01831029
+       3300-CLOSE-PARA.                                                 01840003
+           CLOSE TI001-PS TO001-KSDS TO002-SCH2 TO003-ERR               01850029
+           .                                                            01860003
+       3300-CLOSE-PARA-EXIT.                                            01870003
+           EXIT                                                         01880003
+           .                                                            01890003
+       3200-READ-PARA.                                                  01900003
+           MOVE SPACES TO TI001-PS-REC TO001-KSDS-REC TO002-SCH2-REC    01910029
+                          TO003-ERR-REC                                 01920029
+      * **READ PARA READS THE CONTENT FROM INPUT PS FILE**              01921029
+           READ TI001-PS                                                01930003
+      * **EVALUATING STATUS OF READ FUNCTION**                          01931029
+           EVALUATE TRUE                                                01940018
+           WHEN C05-TI001-SUC                                           01950003
+               ADD 1 TO WS-COUNTER                                      01960030
+               DISPLAY 'RECORD PROCESSED'                               01961030
+           PERFORM 3210-VALID-PARA                                      01970003
+              THRU 3210-VALID-PARA-EXIT                                 01980003
+           WHEN C05-TI001-EOF                                           01990003
+               DISPLAY 'ALL RECORDS PROCESSED'                          02000030
+               DISPLAY 'TOTAL RECORDS:' WS-COUNTER                      02010030
+           WHEN OTHER                                                   02020003
+               DISPLAY 'READ FAILED' WS-FST-TI001                       02030030
+           END-EVALUATE                                                 02040003
+           .                                                            02041017
+       3200-READ-PARA-EXIT.                                             02050005
+           EXIT                                                         02060005
+           .                                                            02070005
+      * **VALIDATING RECORDS WITH ALL CONDITIONS USING VALID PARA**     02071029
+       3210-VALID-PARA.                                                 02080005
+           EVALUATE TRUE                                                02090005
+           WHEN TI001-MEDICINE-CODE GREATER THAN SPACES AND             02100005
+                (TI001-DOSAGE EQUAL TO 'L'              OR              02110030
+                TI001-DOSAGE EQUAL TO 'M'               OR              02120030
+                TI001-DOSAGE EQUAL TO 'H')              AND             02130030
+                TI001-QUANTITY IS NUMERIC               AND             02140030
+                (TI001-EXPIRY-STATUS EQUAL TO 'EXP    ' OR              02150005
+                TI001-EXPIRY-STATUS EQUAL TO 'NOT-EXP') AND             02160003
+                TI001-RATE-PNO(1:2) IS NUMERIC          AND             02170030
+                TI001-RATE-PNO(4:2) IS NUMERIC                          02180005
+                ADD 1 TO WS-I                                           02181026
+      * **ALL VALID RECORDS FROM INPUT UNDERGOES CALCULATION PARA**     02182029
+                PERFORM 3211-CALC-PARA                                  02190026
+                   THRU 3211-CALC-PARA-EXIT                             02200026
+           WHEN OTHER                                                   02210005
+      * **ALL INVALID RECORDS FROM INPUT WILL UNDERGO ERROR PARA**      02211029
+               PERFORM 3212-ERR-PARA                                    02220030
+                  THRU 3212-ERR-PARA-EXIT                               02230030
+           END-EVALUATE                                                 02240005
+           .                                                            02250005
+       3210-VALID-PARA-EXIT.                                            02260005
+           EXIT                                                         02270005
+           .                                                            02280005
+       3211-CALC-PARA.                                                  02290005
+      * **QUANTITY AND ORDER-STATUS CALCULATION**                       02300029
+      * **CALCULATING AND MOVING VALUES TO ARRAY INDEX WS-I**           02301030
+           EVALUATE TRUE                                                02310005
+      * **CONDITION 1: **                                               02311029
+           WHEN TI001-QUANTITY IS LESS THAN 100 AND                     02320005
+                TI001-EXPIRY-STATUS EQUAL TO 'NOT-EXP'                  02330005
+                MOVE 250 TO QUANTITY(WS-I)                              02340030
+                MOVE 'REORDER' TO ORDER-STATUS(WS-I)                    02350030
+                PERFORM 3213-DOSAGE-PARA                                02360030
+                   THRU 3213-DOSAGE-PARA-EXIT                           02370030
+      * **CONDITION 2: **                                               02371029
+           WHEN TI001-QUANTITY IS LESS THAN 100 AND                     02380006
+                TI001-EXPIRY-STATUS EQUAL TO 'EXP    '                  02390006
+                MOVE 50 TO QUANTITY(WS-I)                               02400030
+                MOVE 'REPLACE' TO ORDER-STATUS(WS-I)                    02410030
+                PERFORM 3213-DOSAGE-PARA                                02420030
+                   THRU 3213-DOSAGE-PARA-EXIT                           02430030
+      * **CONDITION 3: **                                               02431029
+           WHEN TI001-QUANTITY IS GREATER THAN 100 AND                  02440006
+                TI001-EXPIRY-STATUS EQUAL TO 'EXP    '                  02450006
+                MOVE 0 TO QUANTITY(WS-I)                                02460030
+                MOVE 'STPSELL' TO ORDER-STATUS(WS-I)                    02470030
+                PERFORM 3213-DOSAGE-PARA                                02480030
+                   THRU 3213-DOSAGE-PARA-EXIT                           02490030
+           END-EVALUATE                                                 02500006
+           .                                                            02500120
+       3211-CALC-PARA-EXIT.                                             02501020
+           EXIT                                                         02502020
+           .                                                            02503020
+       3213-DOSAGE-PARA.                                                02510013
+      * **CLASS CALCULATION**                                           02520029
+           EVALUATE TRUE                                                02530005
+           WHEN TI001-DOSAGE = 'L'                                      02540005
+               MOVE 'SCH1' TO WS-CLASS(WS-I)                            02550030
+           WHEN TI001-DOSAGE = 'M'                                      02560005
+               MOVE 'SCH2' TO WS-CLASS(WS-I)                            02570030
+           WHEN TI001-DOSAGE = 'H'                                      02580005
+               MOVE 'SCH3' TO WS-CLASS(WS-I)                            02590030
+           END-EVALUATE                                                 02600005
+      * **DISCOUNT RATE AND TOTAL PRICE CALCULATION**                   02610029
+           MOVE TI001-RATE-PNO      TO WS-RATE-PNO                      02620030
+           COMPUTE WS-DISC-RATE-PNO = WS-RATE-PNO -                     02630023
+                                  ( WS-RATE-PNO * 20 / 100 )            02640009
+           COMPUTE WS-TOT-PRICE ROUNDED = QUANTITY(WS-I) *              02650025
+                                          WS-DISC-RATE-PNO              02651023
+           MOVE WS-DISC-RATE-PNO    TO DISC-RATE-PNO(WS-I)              02660030
+           MOVE WS-TOT-PRICE        TO TOT-PRICE(WS-I)                  02670030
+           MOVE TI001-MEDICINE-CODE TO MEDICINE-CODE(WS-I)              02680013
+           MOVE TI001-EXPIRY-STATUS TO EXPIRY-STATUS(WS-I)              02690013
+           MOVE TI001-RATE-PNO      TO RATE-PNO(WS-I)                   02700030
+           EVALUATE TRUE                                                02710010
+           WHEN WS-CLASS(WS-I) = 'SCH1' OR WS-CLASS(WS-I) = 'SCH3'      02720013
+               PERFORM 3214-KSDS-WRITE-PARA                             02730030
+                  THRU 3214-KSDS-WRITE-PARA-EXIT                        02740030
+           WHEN WS-CLASS(WS-I) = 'SCH2'                                 02750013
+               PERFORM 3215-SCH2-WRITE-PARA                             02760030
+                  THRU 3215-SCH2-WRITE-PARA-EXIT                        02770030
+           END-EVALUATE                                                 02780010
+           .                                                            02790010
+       3213-DOSAGE-PARA-EXIT.                                           02800020
+           EXIT                                                         02810020
+           .                                                            02820020
+       3212-ERR-PARA.                                                   02830014
+           MOVE TI001-MEDICINE-CODE    TO TO003-MEDICINE-CODE           02840030
+           MOVE TI001-DOSAGE           TO TO003-DOSAGE                  02850030
+           MOVE TI001-QUANTITY         TO TO003-QUANTITY                02860030
+           MOVE TI001-EXPIRY-STATUS    TO TO003-EXPIRY-STATUS           02870030
+           MOVE TI001-RATE-PNO         TO TO003-RATE-PNO                02880030
+           PERFORM 3216-ERR-WRITE-PARA                                  02890014
+              THRU 3216-ERR-WRITE-PARA-EXIT                             02900014
+           .                                                            02910014
+       3212-ERR-PARA-EXIT.                                              02920014
+           EXIT                                                         02930014
+           .                                                            02940014
+       3214-KSDS-WRITE-PARA.                                            02950014
+           MOVE MEDICINE-CODE(WS-I)    TO TO001-MEDICINE-CODE           02960030
+           MOVE QUANTITY(WS-I)         TO TO001-QUANTITY                02970030
+           MOVE EXPIRY-STATUS(WS-I)    TO TO001-EXPIRY-STATUS           02980030
+           MOVE ORDER-STATUS(WS-I)     TO TO001-ORDER-STATUS            02990030
+           MOVE WS-CLASS(WS-I)         TO TO001-CLASS                   03000030
+           MOVE RATE-PNO(WS-I)         TO TO001-RATE-PNO                03010030
+           MOVE DISC-RATE-PNO(WS-I)    TO TO001-DISC-RATE-PNO           03020018
+           MOVE TOT-PRICE(WS-I)        TO TO001-TOT-PRICE               03030030
+           WRITE TO001-KSDS-REC                                         03040014
+           EVALUATE TRUE                                                03050014
+           WHEN C05-TO001-SUC                                           03060014
+               DISPLAY 'KSDS WRITE SUCCESS'                             03070030
+           WHEN OTHER                                                   03080014
+               DISPLAY 'KSDS WRITE FAILED' WS-FST-TO001                 03090030
+           END-EVALUATE                                                 03100014
+           .                                                            03110014
+       3214-KSDS-WRITE-PARA-EXIT.                                       03120014
+           EXIT                                                         03130014
+           .                                                            03140014
+       3215-SCH2-WRITE-PARA.                                            03150015
+           MOVE MEDICINE-CODE(WS-I)    TO TO002-MEDICINE-CODE           03160030
+           MOVE QUANTITY(WS-I)         TO TO002-QUANTITY                03170030
+           MOVE EXPIRY-STATUS(WS-I)    TO TO002-EXPIRY-STATUS           03180030
+           MOVE ORDER-STATUS(WS-I)     TO TO002-ORDER-STATUS            03190030
+           MOVE WS-CLASS(WS-I)         TO TO002-CLASS                   03200030
+           MOVE RATE-PNO(WS-I)         TO TO002-RATE-PNO                03210030
+           MOVE DISC-RATE-PNO(WS-I)    TO TO002-DISC-RATE-PNO           03220018
+           MOVE TOT-PRICE(WS-I)        TO TO002-TOT-PRICE               03230030
+           WRITE TO002-SCH2-REC                                         03240030
+           EVALUATE TRUE                                                03250015
+           WHEN C05-TO002-SUC                                           03260015
+               DISPLAY 'PS WRITE SUCCESS'                               03270030
+           WHEN OTHER                                                   03280015
+               DISPLAY 'PS WRITE FAILED' WS-FST-TO002                   03290030
+           END-EVALUATE                                                 03300015
+           .                                                            03310015
+       3215-SCH2-WRITE-PARA-EXIT.                                       03320015
+           EXIT                                                         03330015
+           .                                                            03331016
+       3216-ERR-WRITE-PARA.                                             03340016
+           WRITE TO003-ERR-REC                                          03350030
+           EVALUATE TRUE                                                03360016
+           WHEN C05-TO003-SUC                                           03370016
+               DISPLAY 'TO003 ERROR WRITE SUCCESS'                      03380030
+           WHEN OTHER                                                   03390016
+               DISPLAY 'TO003 ERROR WRITE FAILED' WS-FST-TO003          03400030
+           END-EVALUATE                                                 03410016
+           .                                                            03420016
+       3216-ERR-WRITE-PARA-EXIT.                                        03430016
+           EXIT                                                         03440016
+           .                                                            03450016
+                                                                        03460016
+

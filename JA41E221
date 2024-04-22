@@ -1,0 +1,19 @@
+//TECN221R JOB NOTIFY=&SYSUID                                           00010016
+//RUN EXEC PGM=CA11G221                       --> MEMBER NAME           00040016
+//STEPLIB DD DSN=TECN221.COBOL.LOADLIB,DISP=SHR     --> LOADLIB NAME    00050016
+//SYSPRINT DD SYSOUT=*                                                  00060000
+//INPMEDPS DD DSN=TECN221.L1E.MEDICINE.PS2,DISP=SHR                     00080016
+//OUTMEDPS DD DSN=TECN221.L1E.MED.NEWORD.KSDS,                          00090016
+//       DISP=SHR                                                       00090112
+//OUTMEDS2 DD DSN=TECN221.L1E.MEDICINE.SCH2,                            00093016
+//       DISP=(NEW,CATLG,DELETE),                                       00093114
+//       SPACE=(TRK,(1,1)),                                             00093214
+//       VOLUME=SER=ZAPRD7,                                             00093314
+//       DCB=(LRECL=80,RECFM=FB,DSORG=PS,BLKSIZE=800)                   00093414
+//OUTMEDER DD DSN=TECN221.L1E.MEDICINE.ERR,                             00097016
+//       DISP=(NEW,CATLG,DELETE),                                       00097214
+//       SPACE=(TRK,(1,1)),                                             00097314
+//       VOLUME=SER=ZAPRD7,                                             00097414
+//       DCB=(LRECL=80,RECFM=FB,DSORG=PS,BLKSIZE=800)                   00097514
+//SYSIN DD DUMMY                                                        00100000
+
